@@ -1,2 +1,0 @@
-/home/jesus/Proyectos/ApagadoProgramado/dist/ApagadoProgramado.pdb
-/home/jesus/Proyectos/ApagadoProgramado/dist/ApagadoProgramado.exe
