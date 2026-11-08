@@ -1,28 +1,52 @@
-# Apagado programado
+# ApagadoProgramado
 
-App para Windows que apaga el equipo a una hora configurable, aunque no haya ningún usuario con la sesión iniciada.
+Aplicación libre para Windows que programa el apagado del equipo a una hora y en unos días determinados, incluso cuando no hay ninguna sesión iniciada. Se distribuye bajo la licencia **GNU GPL versión 3 o posterior**; consulta [LICENSE](./LICENSE).
 
-## Cómo funciona
-- **Servicio de Windows** `ApagadoProgramado` (cuenta SYSTEM, arranque automático): a la hora configurada ejecuta `shutdown /s /f /t 0`, que apaga el equipo y cierra todas las sesiones.
-- **Icono en la bandeja** (se inicia minimizado al iniciar sesión cualquier usuario, sin pedir permisos): muestra un aviso con cuenta atrás antes del apagado, con botón **Cancelar apagado**. Si cancela un usuario, el apagado se cancela para todos. Sin servicio instalado, el icono no se muestra.
-- **Panel de configuración**: solo administradores. Al abrir el .exe (o "Configurar…" en el icono) salta el UAC automáticamente; no hace falta "ejecutar como administrador".
-- Configuración y registro: `C:\ProgramData\ApagadoProgramado\` (`config.json`, `log.txt`).
+> **Aviso:** el apagado fuerza el cierre de todas las sesiones y puede hacer que se pierdan datos que no se hayan guardado. Antes de activar la programación, guarda tu trabajo.
+
+## Funciones
+
+- Servicio de Windows que se ejecuta automáticamente con la cuenta `SYSTEM` y realiza el apagado programado.
+- Icono en el área de notificación con cuenta atrás y opción para cancelar el apagado. Cualquier usuario puede cancelarlo; la cancelación afecta a todo el equipo.
+- Panel de configuración para administradores, con solicitud de permisos mediante UAC.
+- Instalación, reparación y desinstalación del servicio desde la aplicación.
+- Configuración y registro guardados en `C:\ProgramData\ApagadoProgramado\`.
 
 ## Uso
-1. Abre `ApagadoProgramado.exe`, elige hora, días y minutos de aviso.
-2. Pulsa **Instalar servicio**: guarda la configuración, copia la app a `C:\Program Files\ApagadoProgramado`, crea el servicio y el inicio automático. Instalar = activar el apagado.
-3. El mismo botón cambia según el estado:
-   - **Guardar cambios**: servicio instalado y hay cambios sin guardar.
-   - **Desinstalar servicio**: servicio instalado y sin cambios. Elimina el servicio y el inicio automático. Junto al botón aparece el tick **Borrar programa de Program Files** (marcado por defecto): si lo desmarcas, el programa se conserva en `C:\Program Files\ApagadoProgramado`.
-   - **Reparar servicio**: el servicio existe pero está detenido o deshabilitado.
 
-## Permisos
-- Solo los **administradores** ven "Configurar" y pueden abrir el panel. Además, `C:\ProgramData\ApagadoProgramado` es de solo lectura para usuarios normales.
-- **Cancelar un apagado** puede hacerlo cualquier usuario; solo escribe en `ApagadoProgramado\cancel\`.
+1. Abre `ApagadoProgramado.exe` y configura la hora, los días y los minutos de aviso.
+2. Pulsa **Instalar servicio** para guardar la configuración e instalar la aplicación en `C:\Program Files\ApagadoProgramado`. La instalación activa el apagado programado.
+3. Usa el botón según el estado del servicio:
+   - **Guardar cambios** guarda la configuración modificada.
+   - **Desinstalar servicio** quita el servicio y el inicio automático. La casilla **Borrar programa de Program Files** determina si también se elimina la aplicación instalada.
+   - **Reparar servicio** vuelve a habilitar e iniciar un servicio detenido o deshabilitado.
 
-Por línea de comandos: `ApagadoProgramado.exe --install` / `--uninstall` (añade `--keep-files` para conservar el programa en Program Files).
+El panel de configuración requiere permisos de administrador. Los usuarios normales pueden cancelar un apagado desde el icono de notificación, pero no configurar el servicio.
 
-## Compilar (requiere .NET 8 SDK)
+También se puede administrar desde la línea de comandos:
+
+```text
+ApagadoProgramado.exe --install
+ApagadoProgramado.exe --uninstall
+ApagadoProgramado.exe --uninstall --keep-files
 ```
+
+`--keep-files` conserva la aplicación en `C:\Program Files\ApagadoProgramado` al desinstalar.
+
+## Compilar
+
+Se requiere el SDK de .NET 8. Para publicar una versión autocontenida para Windows x64:
+
+```sh
 dotnet publish -c Release -r win-x64 -o dist
 ```
+
+## Contribuir
+
+Las propuestas de mejora y los informes de errores son bienvenidos mediante issues o pull requests en el repositorio. Al contribuir, asegúrate de que tus cambios también puedan distribuirse bajo la licencia GPL-3.0-or-later.
+
+## Licencia
+
+Copyright (C) 2026 Jesús Sáenz.
+
+Este programa está disponible bajo la GNU General Public License, versión 3 o, a tu elección, cualquier versión posterior. Consulta el archivo [LICENSE](./LICENSE) y el [texto oficial de la licencia](https://www.gnu.org/licenses/gpl-3.0.html).
