@@ -5,11 +5,17 @@ namespace ApagadoProgramado;
 
 static class TrayApp
 {
-    public static void RunTray()
+    public static void RunTray(bool waitForPrevious = false)
     {
         // "Local\" => un mutex por sesión de Windows: cada usuario conectado tiene su propio icono.
-        using var mutex = new Mutex(true, @"Local\ApagadoProgramado.Tray", out bool isFirst);
-        if (!isFirst) return;
+        // Se crea sin propietario y se adquiere con WaitOne: así la instancia relevada puede esperar
+        // unos segundos a que la anterior lo libere en lugar de salir si aún no ha terminado.
+        using var mutex = new Mutex(false, @"Local\ApagadoProgramado.Tray");
+        try
+        {
+            if (!mutex.WaitOne(waitForPrevious ? TimeSpan.FromSeconds(10) : TimeSpan.Zero)) return;
+        }
+        catch (AbandonedMutexException) { } // la instancia anterior terminó sin liberarlo: ahora es nuestro
 
         using var ctx = new TrayContext();
         Application.Run(ctx);
@@ -88,8 +94,10 @@ sealed class TrayContext : ApplicationContext
         }
         else
         {
-            Store.Cancel(n);
-            _tray.ShowBalloonTip(3000, "Apagado programado", $"Se ha cancelado el apagado de las {n:HH:mm}.", ToolTipIcon.Info);
+            if (Store.Cancel(n))
+                _tray.ShowBalloonTip(3000, "Apagado programado", $"Se ha cancelado el apagado de las {n:HH:mm}.", ToolTipIcon.Info);
+            else
+                _tray.ShowBalloonTip(3000, "Apagado programado", "No se pudo cancelar el apagado. Inténtalo de nuevo en unos segundos.", ToolTipIcon.Error);
         }
         Tick();
     }
@@ -192,7 +200,12 @@ sealed class WarningForm : Form
         var close = new Button { Text = "Cerrar aviso", Location = new Point(310, 120), Size = new Size(95, 32) };
         cancel.Click += (_, _) =>
         {
-            Store.Cancel(_occurrence);
+            if (!Store.Cancel(_occurrence))
+            {
+                MessageBox.Show("No se pudo cancelar el apagado. Inténtalo de nuevo en unos segundos.",
+                    Text, MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return;
+            }
             Cancelled?.Invoke();
             Close();
         };

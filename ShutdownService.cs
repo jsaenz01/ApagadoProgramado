@@ -37,6 +37,7 @@ public sealed class ShutdownService : ServiceBase
     {
         try
         {
+            Store.EnsureCancelDir();
             var cfg = Store.Load();
             var now = DateTime.Now;
             if (Schedule.Latest(cfg, now) is not { } occ) return;

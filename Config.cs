@@ -74,24 +74,44 @@ public static class Store
     /// </summary>
     public static void ApplyPermissions()
     {
-        Lock(Directory.CreateDirectory(Dir), FileSystemRights.ReadAndExecute);
-        Lock(Directory.CreateDirectory(CancelDir), FileSystemRights.Modify);
+        var dir = Directory.CreateDirectory(Dir);
+        var sec = NewSecurity();
+        Allow(sec, WellKnownSidType.BuiltinUsersSid, FileSystemRights.ReadAndExecute);
+        dir.SetAccessControl(sec);
+
+        // Los usuarios pueden crear, modificar y borrar el archivo de cancelación, pero no la carpeta en sí:
+        // sin el derecho Delete sobre ella (y sin DeleteSubdirectoriesAndFiles) solo un administrador puede borrarla.
+        var cancelDir = Directory.CreateDirectory(CancelDir);
+        sec = NewSecurity();
+        Allow(sec, WellKnownSidType.BuiltinUsersSid,
+            FileSystemRights.ReadAndExecute | FileSystemRights.CreateFiles |
+            FileSystemRights.WriteAttributes | FileSystemRights.WriteExtendedAttributes,
+            InheritanceFlags.None, PropagationFlags.None);
+        Allow(sec, WellKnownSidType.BuiltinUsersSid, FileSystemRights.Modify,
+            InheritanceFlags.ContainerInherit | InheritanceFlags.ObjectInherit, PropagationFlags.InheritOnly);
+        cancelDir.SetAccessControl(sec);
     }
 
-    static void Lock(DirectoryInfo di, FileSystemRights usersRights)
+    static DirectorySecurity NewSecurity()
     {
         var sec = new DirectorySecurity();
         sec.SetAccessRuleProtection(isProtected: true, preserveInheritance: false);
         Allow(sec, WellKnownSidType.LocalSystemSid, FileSystemRights.FullControl);
         Allow(sec, WellKnownSidType.BuiltinAdministratorsSid, FileSystemRights.FullControl);
-        Allow(sec, WellKnownSidType.BuiltinUsersSid, usersRights);
-        di.SetAccessControl(sec);
+        return sec;
     }
 
-    static void Allow(DirectorySecurity sec, WellKnownSidType sid, FileSystemRights rights) =>
+    static void Allow(DirectorySecurity sec, WellKnownSidType sid, FileSystemRights rights,
+        InheritanceFlags inheritance = InheritanceFlags.ContainerInherit | InheritanceFlags.ObjectInherit,
+        PropagationFlags propagation = PropagationFlags.None) =>
         sec.AddAccessRule(new FileSystemAccessRule(new SecurityIdentifier(sid, null), rights,
-            InheritanceFlags.ContainerInherit | InheritanceFlags.ObjectInherit,
-            PropagationFlags.None, AccessControlType.Allow));
+            inheritance, propagation, AccessControlType.Allow));
+
+    /// <summary>Recrea la carpeta de cancelación (con sus permisos) si alguien la ha borrado. Solo con privilegios.</summary>
+    public static void EnsureCancelDir()
+    {
+        if (!Directory.Exists(CancelDir)) ApplyPermissions();
+    }
 
     public static Config Load()
     {
@@ -124,18 +144,25 @@ public static class Store
             return DateTime.TryParse(File.ReadAllText(CancelPath).Trim(), CultureInfo.InvariantCulture,
                 DateTimeStyles.RoundtripKind, out var d) ? d : null;
         }
-        catch (IOException) { return null; }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException) { return null; }
     }
 
-    public static void Cancel(DateTime occurrence)
+    /// <summary>Marca la ocurrencia como cancelada. Devuelve false si no se pudo (p. ej. la carpeta no existe y el usuario no puede crearla).</summary>
+    public static bool Cancel(DateTime occurrence)
     {
-        Directory.CreateDirectory(CancelDir);
-        WriteAtomic(CancelPath, occurrence.ToString("o", CultureInfo.InvariantCulture));
+        try
+        {
+            // La carpeta la crea el servicio con permisos especiales; si falta, el usuario no puede recrearla.
+            if (!Directory.Exists(CancelDir)) return false;
+            WriteAtomic(CancelPath, occurrence.ToString("o", CultureInfo.InvariantCulture));
+            return true;
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException) { return false; }
     }
 
     public static void ClearCancel()
     {
-        try { File.Delete(CancelPath); } catch (IOException) { }
+        try { File.Delete(CancelPath); } catch (Exception ex) when (ex is IOException or UnauthorizedAccessException) { }
     }
 
     public static void Log(string message)

@@ -33,11 +33,32 @@ ApagadoProgramado.exe --uninstall --keep-files
 
 `--keep-files` conserva la aplicación en `C:\Program Files\ApagadoProgramado` al desinstalar.
 
+## Descargar
+
+Descarga el código fuente clonando el repositorio:
+
+```sh
+git clone https://github.com/jsaenz01/ApagadoProgramado.git
+cd ApagadoProgramado
+```
+
+Si no usas Git, también puedes bajar el repositorio como ZIP desde GitHub (**Code → Download ZIP**) y descomprimirlo.
+
 ## Compilar
 
 Se requiere el SDK de .NET 8. Para publicar una versión autocontenida para Windows x64:
 
 ```sh
+dotnet publish -c Release -r win-x64 -o dist
+```
+
+El ejecutable resultante es `dist/ApagadoProgramado.exe`.
+
+Si el SDK está instalado en `~/.dotnet` y no está en el `PATH` (por ejemplo, en Linux), añádelo antes de compilar:
+
+```sh
+export PATH=$PATH:/home/$USER/.dotnet
+cd /home/$USER/Proyectos/ApagadoProgramado
 dotnet publish -c Release -r win-x64 -o dist
 ```
 

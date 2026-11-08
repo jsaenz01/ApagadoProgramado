@@ -24,7 +24,7 @@ static class Program
                 int rc = Installer.Install();
                 // Si venimos de una instancia sin privilegios, abrimos la app ya instalada con el usuario actual.
                 if (rc == 0 && !wasAdmin && File.Exists(Installer.TargetExe))
-                    Process.Start(new ProcessStartInfo(Installer.TargetExe) { UseShellExecute = true });
+                    Process.Start(new ProcessStartInfo(Installer.TargetExe, "--minimized") { UseShellExecute = true });
                 return rc;
             }
             case "--uninstall":
@@ -40,7 +40,7 @@ static class Program
                     else MessageBox.Show("Solo los administradores pueden configurar el apagado programado.",
                         "Apagado programado", MessageBoxButtons.OK, MessageBoxIcon.Information);
                 }
-                TrayApp.RunTray();
+                TrayApp.RunTray(waitForPrevious: mode == "--minimized");
                 return 0;
         }
     }
