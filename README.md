@@ -54,13 +54,33 @@ dotnet publish -c Release -r win-x64 -o dist
 
 El ejecutable resultante es `dist/ApagadoProgramado.exe`.
 
-Si el SDK está instalado en `~/.dotnet` y no está en el `PATH` (por ejemplo, en Linux), añádelo antes de compilar:
+### Instalar el SDK de .NET en Linux (en `~/.dotnet`)
+
+Si no tienes el SDK, puedes instalarlo sin permisos de administrador con el script oficial de Microsoft:
 
 ```sh
-export PATH=$PATH:/home/$USER/.dotnet
-cd /home/$USER/Proyectos/ApagadoProgramado
+curl -sSL https://dot.net/v1/dotnet-install.sh -o dotnet-install.sh
+chmod +x dotnet-install.sh
+./dotnet-install.sh --channel 8.0 --install-dir "$HOME/.dotnet"
+rm dotnet-install.sh
+```
+
+Añade el SDK al `PATH` (en la sesión actual; para que sea permanente, añade estas dos líneas a `~/.bashrc` o `~/.zshrc`):
+
+```sh
+export DOTNET_ROOT="$HOME/.dotnet"
+export PATH="$PATH:$DOTNET_ROOT"
+```
+
+Comprueba la instalación y compila:
+
+```sh
+dotnet --version
+cd ApagadoProgramado
 dotnet publish -c Release -r win-x64 -o dist
 ```
+
+La compilación cruzada desde Linux funciona porque el proyecto ya tiene `EnableWindowsTargeting` activado.
 
 ## Contribuir
 
